@@ -7,3 +7,5 @@ enableEmoji = true
 title = "とくぷ知恵袋"
 author = "tokupooh"
 description = "データ分析者見習い。勉強したことやとりとめのないことをメモ。"
+profilePicture = "/images/tokupooh.jpg"
+ mainSections = ["blog"]
