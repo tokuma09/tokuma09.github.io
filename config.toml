@@ -35,7 +35,9 @@ icon = "fas fa-envelope"
 title = "e-mail"
 url = "mailto:torutoru.cloud@gmail.com"
 
-
+[params.math]
+enable = true
+use = "mathjax"
 
 ## Menu items
 [menu]
