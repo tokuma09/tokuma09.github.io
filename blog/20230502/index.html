@@ -1,0 +1,179 @@
+<!doctype html><html dir=ltr lang=en data-theme><head><title>Tokuma Suzuki
+|
+Diffusion Modelサマリー</title><meta charset=utf-8><meta name=generator content="Hugo 0.101.0"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name=description content="
+      データ分析者見習い。勉強したことやとりとめのないことをメモ。
+
+
+    "><link rel=stylesheet href=/css/main.min.3cda3d57dee1a993222e4fa080ecf03e9e2e2d89063ee18dc70744f56961c8d9.css integrity="sha256-PNo9V97hqZMiLk+ggOzwPp4uLYkGPuGNxwdE9WlhyNk=" crossorigin=anonymous type=text/css><link rel=stylesheet href=/css/markupHighlight.min.058b31f17db60602cc415fd63b0427e7932fbf35c70d8e341a4c39385f5f6f3e.css integrity="sha256-BYsx8X22BgLMQV/WOwQn55MvvzXHDY40Gkw5OF9fbz4=" crossorigin=anonymous type=text/css><link rel=stylesheet href=https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA==" crossorigin=anonymous><link rel="shortcut icon" href=/favicons/favicon.ico type=image/x-icon><link rel=apple-touch-icon sizes=180x180 href=/favicons/apple-touch-icon.png><link rel=icon type=image/png sizes=32x32 href=/favicons/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicons/favicon-16x16.png><link rel=canonical href=https://tokuma09.github.io/blog/20230502/><script type=text/javascript src=/js/anatole-header.min.d0408165d31a17f17bba83038bf54e86121f85021bdf936382e636f0f77a952f.js integrity="sha256-0ECBZdMaF/F7uoMDi/VOhhIfhQIb35NjguY28Pd6lS8=" crossorigin=anonymous></script>
+<script type=text/javascript src=/js/anatole-theme-switcher.min.ea8ebe268922ef9849261a1312cd65b640595e65251ce4c00534a176afd1ac0c.js integrity="sha256-6o6+Joki75hJJhoTEs1ltkBZXmUlHOTABTShdq/RrAw=" crossorigin=anonymous></script><meta name=twitter:card content="summary"><meta name=twitter:title content="Diffusion Modelサマリー"><meta name=twitter:description content="1. はじめに 2020年にDiffusion Modelに関する論文が発表されて以降、生成モデルの研究が進展している。 2021年以降はこのDiffusion Modelをベースとした画像生成AIサービスがリリースされて世間からの注目を集めている。
+DALL·E2 Midjourney Stable Diffusion 2023年5月現在生成モデルとして最も注目を集めているのは大規模言語モデル(例: OpenAIのGPT-4)であるが、Diffusion Modelは主に画像生成の文脈で利用されており、モデルのスコープが異なることに注意されたい。
+最近のバズワードの大規模言語モデルではないが、生成モデルという枠組みの中では非常に重要かつモデル構造も面白いので、今回はDiffusion Modelを取り扱っていきたい。
+TransformerベースにGPTモデルファミリーまで一気に論文読む&実装する会も将来的に扱うつもり。 2. Diffusion Model 早わかり Diffusion Modelは生成モデルの1種であり、forward processとreverse processの２つの確率過程から構成される。
+平たく言えば下記の図のようになる。
+forward processは画像に僅かなノイズを少しずつ加えるプロセスを示している。 reverse processはノイズになったデータから徐々に元の画像に復元するプロセスを示している。 このreverse processをモデル化してデータから学習する 実際に学習したモデルを用いて、画像生成する場合には何らかのノイズをモデルに与えて、reverse processを経由することで、画像が生成される。Ho et al.(2020)は下記のような生成結果を提示している。
+なお、最近の研究ではテキストを入力すると対応する画像が生成されるモデルも存在している。
+例: OpenAIのGLIDE このような生成は条件付き生成と呼ばれ、実務上求められるのはこちらの生成方法だろう。
+なぜこのようなシンプルな構造でうまくいくのか？については現在も明確な答えはないが、最もシンプルな仮説は下記である。
+reverse processが多くの確率層からなる深いネットワークであることが複雑な画像生成を実現している 初期の画像処理モデルも層を深くすることが出来る様になってブレイクスルーが起きた(例: ResNet) 生成プロセス(reverse process)のみをモデル化している VAEは生成モデルと認識モデルを同時に学習 GANは生成モデルと認識モデルを交互に学習 それでは以降では具体的なモデルの中身を見ていきたい。
+3. Diffusion Model モデル詳細 本章では岡野原(2023)に基づいてDiffusion Modelの全体像・学習・推論を見ていく。
+余談: Ho et al.(2020)を見ていってもよいが、いきなりこれを見ると挫折する。やや遠回りに見えるがLuo et al.(2022)から読み進めていくことを勧める。 3.1 全体像 2で述べたようにDiffusion Modelはforward processとreverse processから構成される。
+forward process
+forward processはもともとのデータ $\bold{x}_0$ から徐々にデータの情報を減らしてノイズを加えた、ノイズ付与データの系列 $\bold{x}_1, \cdots, \bold{x}_T$を得るマルコフプロセスである。"><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","articleSection":"blog","name":"Diffusion Modelサマリー","headline":"Diffusion Modelサマリー","alternativeHeadline":"","description":"
+      
+        1. はじめに 2020年にDiffusion Modelに関する論文が発表されて以降、生成モデルの研究が進展している。 2021年以降はこのDiffusion Modelをベースとした画像生成AIサービスがリリースされて世間からの注目を集めている。\nDALL·E2 Midjourney Stable Diffusion 2023年5月現在生成モデルとして最も注目を集めているのは大規模言語モデル(例: OpenAIのGPT-4)であるが、Diffusion Modelは主に画像生成の文脈で利用されており、モデルのスコープが異なることに注意されたい。\n最近のバズワードの大規模言語モデルではないが、生成モデルという枠組みの中では非常に重要かつモデル構造も面白いので、今回はDiffusion Modelを取り扱っていきたい。\nTransformerベースにGPTモデルファミリーまで一気に論文読む\u0026amp;実装する会も将来的に扱うつもり。 2. Diffusion Model 早わかり Diffusion Modelは生成モデルの1種であり、forward processとreverse processの２つの確率過程から構成される。\n平たく言えば下記の図のようになる。\nforward processは画像に僅かなノイズを少しずつ加えるプロセスを示している。 reverse processはノイズになったデータから徐々に元の画像に復元するプロセスを示している。 このreverse processをモデル化してデータから学習する 実際に学習したモデルを用いて、画像生成する場合には何らかのノイズをモデルに与えて、reverse processを経由することで、画像が生成される。Ho et al.(2020)は下記のような生成結果を提示している。\nなお、最近の研究ではテキストを入力すると対応する画像が生成されるモデルも存在している。\n例: OpenAIのGLIDE このような生成は条件付き生成と呼ばれ、実務上求められるのはこちらの生成方法だろう。\nなぜこのようなシンプルな構造でうまくいくのか？については現在も明確な答えはないが、最もシンプルな仮説は下記である。\nreverse processが多くの確率層からなる深いネットワークであることが複雑な画像生成を実現している 初期の画像処理モデルも層を深くすることが出来る様になってブレイクスルーが起きた(例: ResNet) 生成プロセス(reverse process)のみをモデル化している VAEは生成モデルと認識モデルを同時に学習 GANは生成モデルと認識モデルを交互に学習 それでは以降では具体的なモデルの中身を見ていきたい。\n3. Diffusion Model モデル詳細 本章では岡野原(2023)に基づいてDiffusion Modelの全体像・学習・推論を見ていく。\n余談: Ho et al.(2020)を見ていってもよいが、いきなりこれを見ると挫折する。やや遠回りに見えるがLuo et al.(2022)から読み進めていくことを勧める。 3.1 全体像 2で述べたようにDiffusion Modelはforward processとreverse processから構成される。\nforward process\nforward processはもともとのデータ $\\bold{x}_0$ から徐々にデータの情報を減らしてノイズを加えた、ノイズ付与データの系列 $\\bold{x}_1, \\cdots, \\bold{x}_T$を得るマルコフプロセスである。
+
+
+      
+
+
+    ","inLanguage":"ja","isFamilyFriendly":"true","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/tokuma09.github.io\/blog\/20230502\/"},"author":{"@type":"Person","name":"Tokuma Suzuki"},"creator":{"@type":"Person","name":"Tokuma Suzuki"},"accountablePerson":{"@type":"Person","name":"Tokuma Suzuki"},"copyrightHolder":{"@type":"Person","name":"Tokuma Suzuki"},"copyrightYear":"2023","dateCreated":"2023-05-02T00:04:42.00Z","datePublished":"2023-05-02T00:04:42.00Z","dateModified":"2023-05-02T00:04:42.00Z","publisher":{"@type":"Organization","name":"Tokuma Suzuki","url":"https://tokuma09.github.io/","logo":{"@type":"ImageObject","url":"https:\/\/tokuma09.github.io\/favicons\/favicon-32x32.png","width":"32","height":"32"}},"image":[],"url":"https:\/\/tokuma09.github.io\/blog\/20230502\/","wordCount":"834","genre":[],"keywords":["tips","diffusion"]}</script></head><body><header><div class="page-top
+animated fadeInDown"><a role=button class=navbar-burger data-target=navMenu aria-label=menu aria-expanded=false><span aria-hidden=true></span>
+<span aria-hidden=true></span>
+<span aria-hidden=true></span></a><nav><ul class=nav__list id=navMenu><div class=nav__links><li><a href=/ title>Home</a></li><li><a href=/blog/ title>Blog</a></li></div><ul><li><a class=theme-switch title="Switch Theme"><i class="fas fa-adjust fa-fw" aria-hidden=true></i></a></li></ul></ul></nav></div></header><div class=wrapper><aside><div class="sidebar
+animated fadeInDown"><div class=sidebar__content><div class=logo-title><div class=title><img src=/images/tokupooh.jpg alt="profile picture"><h3 title><a href=/>人力知恵袋</a></h3><div class=description><p>データ分析者見習い。勉強したことやとりとめのないことをメモ。</p></div></div></div><ul class=social-links><li><a href=https://github.com/tokuma09 rel=me aria-label=GitHub title=GitHub><i class="fab fa-github fa-2x" aria-hidden=true></i></a></li><li><a href=https://twitter.com/tokutokupooh rel=me aria-label=Twitter title=Twitter><i class="fab fa-twitter fa-2x" aria-hidden=true></i></a></li><li><a href=https://www.linkedin.com/in/tokuma-suzuki/ rel=me aria-label=LinkedIn title=LinkedIn><i class="fab fa-linkedin fa-2x" aria-hidden=true></i></a></li><li><a href=mailto:torutoru.cloud@gmail.com rel=me aria-label=e-mail title=e-mail><i class="fas fa-envelope fa-2x" aria-hidden=true></i></a></li></ul></div><footer class="footer footer--sidebar"><div class=by_farbox><ul class=footer__list><li class=footer__item>&copy;
+2022-2023</li></ul></div></footer><script type=text/javascript src=/js/medium-zoom.min.51d7548d5d0e5d4ff7991252239ce6abf1fd527a0eabad7ce6b49aa21f6e08da.js integrity="sha256-UddUjV0OXU/3mRJSI5zmq/H9UnoOq6185rSaoh9uCNo=" crossorigin=anonymous></script><script defer type=text/javascript src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML" integrity=sha384-e/4/LvThKH1gwzXhdbY2AsjR3rm7LHWyhIG5C0jiRfn8AN2eTN5ILeztWw0H9jmN crossorigin=anonymous></script>
+<script type=text/x-mathjax-config>
+      MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']] } });
+    </script><script async src="https://www.googletagmanager.com/gtag/js?id=G-REEV38QRJL"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-REEV38QRJL")</script></div></aside><main><div class=autopagerize_page_element><div class=content><div class="post
+animated fadeInDown"><div class=post-content><div class=post-title><h1>Diffusion Modelサマリー</h1></div><h2 id=1-はじめに>1. はじめに</h2><p>2020年にDiffusion Modelに関する論文が発表されて以降、生成モデルの研究が進展している。
+2021年以降はこのDiffusion Modelをベースとした画像生成AIサービスがリリースされて世間からの注目を集めている。</p><ul><li><a href=https://openai.com/product/dall-e-2>DALL·E2</a></li><li><a href="https://www.midjourney.com/home/?callbackUrl=%2Fapp%2F">Midjourney</a></li><li><a href=https://beta.dreamstudio.ai/generate>Stable Diffusion</a></li></ul><p>2023年5月現在生成モデルとして最も注目を集めているのは大規模言語モデル(例: OpenAIのGPT-4)であるが、Diffusion Modelは主に画像生成の文脈で利用されており、モデルのスコープが異なることに注意されたい。</p><p>最近のバズワードの大規模言語モデルではないが、生成モデルという枠組みの中では非常に重要かつモデル構造も面白いので、今回はDiffusion Modelを取り扱っていきたい。</p><ul><li>TransformerベースにGPTモデルファミリーまで一気に論文読む&実装する会も将来的に扱うつもり。</li></ul><h2 id=2-diffusion-model-早わかり>2. Diffusion Model 早わかり</h2><p>Diffusion Modelは生成モデルの1種であり、forward processとreverse processの２つの確率過程から構成される。</p><p>平たく言えば下記の図のようになる。</p><p><img src=/images/20230502/diffusion_model_summary.png alt="Diffusion Modelイメージ(Ho et al.(2020)より引用)"></p><ul><li>forward processは画像に僅かなノイズを少しずつ加えるプロセスを示している。</li><li>reverse processはノイズになったデータから徐々に元の画像に復元するプロセスを示している。<ul><li>このreverse processをモデル化してデータから学習する</li></ul></li></ul><p>実際に学習したモデルを用いて、画像生成する場合には何らかのノイズをモデルに与えて、reverse processを経由することで、画像が生成される。Ho et al.(2020)は下記のような生成結果を提示している。</p><p><img src=/images/20230502/unconditional_generation.png alt="生成結果(Ho et al.(2020)より引用)"></p><p>なお、最近の研究ではテキストを入力すると対応する画像が生成されるモデルも存在している。</p><ul><li>例: OpenAIの<a href=https://arxiv.org/pdf/2112.10741.pdf>GLIDE</a></li></ul><p><img src=/images/20230502/GLIDE.png alt="生成結果(Ho et al.(2020)より引用)"></p><p>このような生成は条件付き生成と呼ばれ、実務上求められるのはこちらの生成方法だろう。</p><p>なぜこのようなシンプルな構造でうまくいくのか？については現在も明確な答えはないが、最もシンプルな仮説は下記である。</p><ul><li>reverse processが多くの確率層からなる深いネットワークであることが複雑な画像生成を実現している<ul><li>初期の画像処理モデルも層を深くすることが出来る様になってブレイクスルーが起きた(例: ResNet)</li></ul></li><li>生成プロセス(reverse process)のみをモデル化している<ul><li>VAEは生成モデルと認識モデルを同時に学習</li><li>GANは生成モデルと認識モデルを交互に学習</li></ul></li></ul><p>それでは以降では具体的なモデルの中身を見ていきたい。</p><h2 id=3-diffusion-model-モデル詳細>3. Diffusion Model モデル詳細</h2><p>本章では岡野原(2023)に基づいてDiffusion Modelの全体像・学習・推論を見ていく。</p><ul><li>余談: Ho et al.(2020)を見ていってもよいが、いきなりこれを見ると挫折する。やや遠回りに見えるがLuo et al.(2022)から読み進めていくことを勧める。</li></ul><h3 id=31-全体像>3.1 全体像</h3><p>2で述べたようにDiffusion Modelはforward processとreverse processから構成される。</p><p><strong>forward process</strong></p><p>forward processはもともとのデータ $\bold{x}_0$ から徐々にデータの情報を減らしてノイズを加えた、ノイズ付与データの系列
+$\bold{x}_1, \cdots, \bold{x}_T$を得るマルコフプロセスである。</p><ul><li>$q(\bold{x}_{1:T}\mid \bold{x}<em>0) = \prod</em>{t=1}^{T} q(\bold{x}<em>t \mid \bold{x}</em>{t-1})$</li><li>$q(\bold{x}<em>t \mid \bold{x}</em>{t-1}) = \mathcal{N}\left(\bold{x}<em>t; \sqrt{\alpha_t}\bold{x}</em>{t-1}, \beta_t\bold{I}\right)$</li></ul><p>ここで$0 &lt; \beta_1 &lt; \cdots &lt; \beta_T &lt; 1$は分散の大きさを制御するパラメータで$\alpha_t = 1- \beta_t$とする。　$\alpha_t$は情報をどれだけ保持するかを示しており、これらを合わせてノイズスケジュールと呼ぶ。</p><p>なお任意の$\bold{x}_0$についてTが十分大きい時$q(\bold{x}_T \mid \bold{x}<em>0) \approx
+\mathcal{N}\left(\bold{X}</em>{T}; 0, \bold{I}\right)$と$q(\bold{x}<em>T) \approx \mathcal{N}\left(\bold{x}</em>{T}; 0, \bold{I}\right)$が成立する。</p><p>なお、ノイズに正規分布を使っていることから、各時刻$t$におけるサンプル$\bold{x}_t \sim q\left(\bold{x}_t \mid \bold{x}_0\right)$は解析的に求めることが出来る。</p><ul><li>$q\left(\bold{x}_t \mid \bold{x}_0\right) = \mathcal{N}\left( \sqrt{\bar{\alpha}<em>t}\bold{x}</em>{0}, \bar{\beta}_t\bold{I}\right) $</li><li>$\bar{\alpha}<em>t = \prod</em>{s=1}^{t}\alpha_s$</li><li>$\bar{\beta}_t = 1 - \bar{\alpha}_t$</li></ul><p>証明は岡野原を参照されたいが、帰納的に求めることが出来る。</p><p><strong>reverse process</strong></p><p>reverse processは完全なノイズからデータに戻るためのマルコフ過程として定義する。
+この時各ステップは正規分布であると仮定し、平均と共分散行列をNNでモデル化する。このときの入力は時刻$t$と前の時刻の変数$\bold{x}_{t}$である。</p><ul><li>$ p_{\theta}(\bold{x}<em>{0:T}) = p\left(\bold{x}<em>T\right) \prod</em>{t=1}^{T} p</em>{\theta}(\bold{x}_{t-1} \mid \bold{x}_t) $</li><li>$p_{\theta}(\bold{x}<em>{t-1} \mid \bold{x}<em>t) = \mathcal{N}\left(\bold{x}</em>{t-1}; \mu</em>{\theta}(\bold{x}<em>t, t), \bold{\Sigma}</em>{\theta}(\bold{x}_t, t)\right)$</li><li>$p\left(\bold{x}<em>T\right) = \mathcal{N}\left(\bold{x}</em>{T}; 0, \bold{I}\right)$</li></ul><p>この仮定は徐々に画像にガウシアンノイズを加えるプロセスを最終的に画像がガウシアンノイズになるまで続けることを意味している。</p><h3 id=32-学習>3.2. 学習</h3><p>Diffusion Modelのパラメータは最尤法によって推定される。
+したがって観測変数$\bold{x}<em>0$の尤度$p</em>{\theta}(\bold{x}<em>0)$の最大化を行えばよい。
+この時$p</em>{\theta}(\bold{x}_0)$はreverse processの同時確率において$\bold{x_1}, \cdots, \bold{x}_T$を周辺化することで得られる。</p><p>$$p_{\theta}(\bold{x}<em>0) = \int p</em>{\theta}(\bold{x}<em>{0:T})d \bold{x}</em>{1:T}$$</p><p>ここで $\bold{x}_{i:j} = \bold{x}_i, \cdots, \bold{x}_j$である。　</p><p>単純にこの尤度を最大にしたいのだが、潜在変数の積分が含まれていることが問題である。この積分計算があるせいで、現実的な計算時間で計算することが難しくなってしまう。</p><p>そこでDiffusion Modelに限らず生成モデルの多くは対数尤度の変分下限(ELBO)の最大化によってパラメータの推定を行う。</p><p>以降は目的関数となるELBOの定式化を行う。なお最小化問題として定式化するために以下では負の対数尤度、ELBOを考える。</p><p>$$
+\begin{aligned}</p><ul><li>&\log p_{\theta}(\bold{x}<em>0) \
+&= \log \int \frac{q(\bold{x}</em>{1:T}\mid \bold{x}<em>0) p</em>{\theta}(\bold{x}<em>{0:T})}{q(\bold{x}</em>{1:T}\mid \bold{x}<em>0)} d \bold{x}</em>{1:T}　\
+&\le \mathbb{E}<em>{q(\bold{x}</em>{1:T}\mid \bold{x}<em>0)} \left[- \log \frac{p</em>{\theta}(\bold{x}<em>0)}{q(\bold{x}</em>{1:T}\mid \bold{x}<em>0)} \right] \quad\text{(Jensenの不等式と期待値定義より)} \
+&=\mathbb{E}</em>{q(\bold{x}<em>{1:T}\mid \bold{x}<em>0)} \left[- \log
+\frac{ p</em>{\theta}(\bold{x}</em>{0} \mid \bold{x}<em>1) \dots p</em>{\theta}(\bold{x}<em>{T-1} \mid \bold{x}<em>T)p(\bold{x}<em>T)}
+{q(\bold{x}<em>T \mid \bold{x}</em>{T-1})q(\bold{x}</em>{T-1} \mid \bold{x}</em>{T-2})\dots q(\bold{x}<em>1 \mid \bold{x}</em>{0})}
+\right] \
+&=\mathbb{E}</em>{q(\bold{x}<em>{1:T}\mid \bold{x}<em>0)} \left[- \log p(\bold{x}<em>T) - \sum</em>{t\ge1} \log \frac{p</em>{\theta}(\bold{x}</em>{t-1} \mid \bold{x}_t)}{q\left(\bold{x}<em>t \mid \bold{x}</em>{t-1}\right) } \right] \quad\text{(対数の性質より)} \
+&:= L(\theta)
+\end{aligned}
+$$
+ここで$L(\theta)$対数尤度の下限であることからELBOと呼ばれる。</li></ul><p>ここからELBOをもう少し変形して、更に計算しやすくする。
+$$
+\begin{aligned}
+L(\theta) &= \mathbb{E}<em>{q(\bold{x}</em>{1:T}\mid \bold{x}<em>0)} \left[- \log p(\bold{x}<em>T) - \sum</em>{t>1} \log \frac{p</em>{\theta}(\bold{x}<em>{t-1} \mid \bold{x}<em>t)}{q\left(\bold{x}<em>t \mid \bold{x}</em>{t-1}\right) } - \log \frac{p</em>{\theta}(\bold{x}</em>{0} \mid \bold{x}<em>1)}{q\left(\bold{x}<em>1 \mid \bold{x}<em>0\right) } \right] \
+&= \mathbb{E}</em>{q(\bold{x}</em>{1:T}\mid \bold{x}<em>0)} \left[- \log p(\bold{x}<em>T) -
+\sum</em>{t>1} \log \frac{p</em>{\theta}(\bold{x}</em>{t-1} \mid \bold{x}<em>t)}{q\left(\bold{x}</em>{t-1} \mid \bold{x}_{t}, \bold{x}<em>0\right) } \times \frac{q(\bold{x}</em>{t-1} \mid \bold{x}<em>0)}{q(\bold{x}</em>{t} \mid \bold{x}_0)}</p><ul><li>\log \frac{p_{\theta}(\bold{x}_{0} \mid \bold{x}_1)}{q\left(\bold{x}<em>1 \mid \bold{x}<em>0\right) } \right] \quad\text{(ベイズの定理より)} \
+&= \mathbb{E}</em>{q(\bold{x}</em>{1:T}\mid \bold{x}<em>0)} \left[- \log \frac{p(\bold{x}<em>T)}{q(\bold{x}<em>T \mid \bold{x}<em>0)} -
+\sum</em>{t>1} \log \frac{p</em>{\theta}(\bold{x}</em>{t-1} \mid \bold{x}<em>t)}{q\left(\bold{x}</em>{t-1} \mid \bold{x}</em>{t}, \bold{x}_0\right) }</li><li>\log p_{\theta}(\bold{x}<em>{0} \mid \bold{x}<em>1) \right] \quad\text{(連鎖的に簡略化出来る)} \
+&=
+\mathbb{E}</em>{q(\bold{x}</em>{1:T}\mid \bold{x}<em>0)}
+\left[
+\underbrace{D</em>{KL}(q(\bold{x}_T \mid \bold{x}_0) \mid\mid p(\bold{x}<em>T))}</em>{L_T}</li></ul><ul><li>\sum_{t>1}\underbrace{D_{KL}(q(\bold{x}_{t-1} \mid \bold{x}<em>t, \bold{x}<em>0) \mid\mid p(\bold{x}</em>{t-1}\mid \bold{x}<em>t))}</em>{L</em>{t-1}}</li></ul><ul><li>\underbrace{\log p_{\theta}(\bold{x}_{0} \mid \bold{x}<em>1) }</em>{L_0}
+\right]
+\end{aligned}
+$$</li></ul><p>具体的な$L_T$, $L_{t-1}$, $L_{0}$の計算結果については時間の都合上省略する。今後記載アップデート予定。実はここが非常に重要。</p><p>最終的にはDiffusion Modelの学習に使う目的関数は次のように書くことが出来る。
+$$
+L_{\gamma}(\theta) = \sum_{t=1}^{T} w_t \mathbb{E}_{\bold{x}<em>0, \epsilon} \left[ \mid\mid \epsilon - \epsilon</em>{\theta}\left(\sqrt{\bar{\alpha}_t}\bold{x_0} + \sqrt{\bar{\beta}_t \epsilon}, t\right) \mid\mid^2\right]
+$$</p><p>ここで$\gamma = [w_1, \ldots, w_T]$であり、それぞれは各時刻の重みを示す。なおHo et al.(2020)では$w_t$をすべて1として学習している。</p><ul><li>岡野原では重みの設定によらず目的関数の最適解が一致すること、重みの設定による学習のしやすさが異なることが指摘されている。</li></ul><p>Ho et al.(2020)のアルゴリズムを以下に示す。
+<img src=/static/images/20230502/training.png alt="学習アルゴリズム(Ho et al.(2020)より引用)"></p><h3 id=33-推論>3.3 推論</h3><p>推論として、画像生成のアルゴリズムを提示する。</p><p>まず標準正規分布からノイズを1つ引き、$p_{\theta}(\bold{x}<em>{t-1} \mid \bold{x}<em>t) = \mathcal{N}\left(\bold{x}</em>{t-1}; \mu</em>{\theta}(\bold{x}<em>t, t), \bold{\Sigma}</em>{\theta}(\bold{x}_t, t)\right)$に基づいてreverse processの計算を行う。</p><p>この時変数変換をすることで、$ \mu_{\theta}(\bold{x}_t, t) + \sigma_t \bold{z}_t$, $ \bold{z}_t=\mathcal{N}\left(\bold{0}, \bold{I}\right)$としてサンプリング出来る。また学習パートで記載したように平均は推定したノイズを用いて表現する。</p><p><img src=/static/images/20230502/sampling.png alt="サンプリングアルゴリズム(Ho et al.(2020)より引用)"></p><h2 id=4-diffusion-model-実装>4. Diffusion Model 実装</h2><p>では具体的な実装について最後に見ていきたい。実装はHugging Faceのブログ<a href=https://huggingface.co/blog/annotated-diffusion>The Annotated Diffusion Model</a>を参考にするとよい。</p><p>いくつか重要なところのみピックアップしていく。</p><ul><li>具体的にはdenoiseするニューラルネットワークの実装、実際の学習・生成のコードは割愛し、理論との対応関係を明確にする。</li></ul><p>まずはノイズスケジュールについての実装を見ていく。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>linear_beta_schedule</span>(timesteps):
+</span></span><span style=display:flex><span>    beta_start <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.0001</span>
+</span></span><span style=display:flex><span>    beta_end <span style=color:#f92672>=</span> <span style=color:#ae81ff>0.02</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> torch<span style=color:#f92672>.</span>linspace(beta_start, beta_end, timesteps)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>timesteps <span style=color:#f92672>=</span> <span style=color:#ae81ff>200</span>
+</span></span><span style=display:flex><span><span style=color:#75715e># define beta schedule</span>
+</span></span><span style=display:flex><span>betas <span style=color:#f92672>=</span> linear_beta_schedule(timesteps<span style=color:#f92672>=</span>timesteps)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># define alphas </span>
+</span></span><span style=display:flex><span>alphas <span style=color:#f92672>=</span> <span style=color:#ae81ff>1.</span> <span style=color:#f92672>-</span> betas
+</span></span><span style=display:flex><span>alphas_cumprod <span style=color:#f92672>=</span> torch<span style=color:#f92672>.</span>cumprod(alphas, axis<span style=color:#f92672>=</span><span style=color:#ae81ff>0</span>)
+</span></span><span style=display:flex><span>alphas_cumprod_prev <span style=color:#f92672>=</span> F<span style=color:#f92672>.</span>pad(alphas_cumprod[:<span style=color:#f92672>-</span><span style=color:#ae81ff>1</span>], (<span style=color:#ae81ff>1</span>, <span style=color:#ae81ff>0</span>), value<span style=color:#f92672>=</span><span style=color:#ae81ff>1.0</span>)
+</span></span><span style=display:flex><span>sqrt_recip_alphas <span style=color:#f92672>=</span> torch<span style=color:#f92672>.</span>sqrt(<span style=color:#ae81ff>1.0</span> <span style=color:#f92672>/</span> alphas)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># calculations for diffusion q(x_t | x_{t-1}) and others</span>
+</span></span><span style=display:flex><span>sqrt_alphas_cumprod <span style=color:#f92672>=</span> torch<span style=color:#f92672>.</span>sqrt(alphas_cumprod)
+</span></span><span style=display:flex><span>sqrt_one_minus_alphas_cumprod <span style=color:#f92672>=</span> torch<span style=color:#f92672>.</span>sqrt(<span style=color:#ae81ff>1.</span> <span style=color:#f92672>-</span> alphas_cumprod)
+</span></span></code></pre></div><p>ここでは$T=200$を想定し、$\beta$を線形に増加させていくように設定する。また論文と同様に$\alpha = 1- \beta$として定義している。
+さらに<code>alphas_cumprod</code>において$\bar{\alpha}_t$を計算し、forward processのためのパラメータも用意している。</p><p>実際にforward processを定義すると下記のようになる。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>q_sample</span>(x_start, t, noise<span style=color:#f92672>=</span><span style=color:#66d9ef>None</span>):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> noise <span style=color:#f92672>is</span> <span style=color:#66d9ef>None</span>:
+</span></span><span style=display:flex><span>        noise <span style=color:#f92672>=</span> torch<span style=color:#f92672>.</span>randn_like(x_start)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    sqrt_alphas_cumprod_t <span style=color:#f92672>=</span> extract(sqrt_alphas_cumprod, t, x_start<span style=color:#f92672>.</span>shape)
+</span></span><span style=display:flex><span>    sqrt_one_minus_alphas_cumprod_t <span style=color:#f92672>=</span> extract(
+</span></span><span style=display:flex><span>        sqrt_one_minus_alphas_cumprod, t, x_start<span style=color:#f92672>.</span>shape
+</span></span><span style=display:flex><span>    )
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> sqrt_alphas_cumprod_t <span style=color:#f92672>*</span> x_start <span style=color:#f92672>+</span> sqrt_one_minus_alphas_cumprod_t <span style=color:#f92672>*</span> noise
+</span></span></code></pre></div><p>ややわかりにくいがextract関数を使って、適切な時刻のノイズパラメータの累積値を取り出すことで、
+$
+q\left(\bold{x}_t \mid \bold{x}_0\right) = \mathcal{N}\left( \sqrt{\bar{\alpha}<em>t}\bold{x}</em>{0}, \bar{\beta}_t\bold{I}\right)
+$を計算していることがわかる。</p><p>次にloss関数を定義する。
+<img src=/static/images/20230502/training.png alt="学習アルゴリズム(Ho et al.(2020)より引用)"></p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>p_losses</span>(denoise_model, x_start, t, noise<span style=color:#f92672>=</span><span style=color:#66d9ef>None</span>, loss_type<span style=color:#f92672>=</span><span style=color:#e6db74>&#34;l1&#34;</span>):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> noise <span style=color:#f92672>is</span> <span style=color:#66d9ef>None</span>:
+</span></span><span style=display:flex><span>        noise <span style=color:#f92672>=</span> torch<span style=color:#f92672>.</span>randn_like(x_start)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    x_noisy <span style=color:#f92672>=</span> q_sample(x_start<span style=color:#f92672>=</span>x_start, t<span style=color:#f92672>=</span>t, noise<span style=color:#f92672>=</span>noise)
+</span></span><span style=display:flex><span>    predicted_noise <span style=color:#f92672>=</span> denoise_model(x_noisy, t)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> loss_type <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;l1&#39;</span>:
+</span></span><span style=display:flex><span>        loss <span style=color:#f92672>=</span> F<span style=color:#f92672>.</span>l1_loss(noise, predicted_noise)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>elif</span> loss_type <span style=color:#f92672>==</span> <span style=color:#e6db74>&#39;l2&#39;</span>:
+</span></span><span style=display:flex><span>        loss <span style=color:#f92672>=</span> F<span style=color:#f92672>.</span>mse_loss(noise, predicted_noise)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>elif</span> loss_type <span style=color:#f92672>==</span> <span style=color:#e6db74>&#34;huber&#34;</span>:
+</span></span><span style=display:flex><span>        loss <span style=color:#f92672>=</span> F<span style=color:#f92672>.</span>smooth_l1_loss(noise, predicted_noise)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>else</span>:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>raise</span> <span style=color:#a6e22e>NotImplementedError</span>()
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> loss
+</span></span></code></pre></div><p>学習アルゴリズムにあるように、ニューラルネットワークにノイズを含んだデータと時点情報を入力し、ノイズを予測する。そして真のノイズとの誤差をlossとして定義する。</p><ul><li>denoise_model(x_noisy, t)が$\epsilon_\theta$に対応している。<ul><li>denoise_modelはU-Netを利用しているが、ここでは割愛。</li></ul></li><li>ここでは論文とやや異なり、正則化を加えたloss関数についても対応していることがわかる。</li></ul><p>最後にデータ生成に関わるプログラムを確認する。</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># calculations for posterior q(x_{t-1} | x_t, x_0)</span>
+</span></span><span style=display:flex><span>posterior_variance <span style=color:#f92672>=</span> betas <span style=color:#f92672>*</span> (<span style=color:#ae81ff>1.</span> <span style=color:#f92672>-</span> alphas_cumprod_prev) <span style=color:#f92672>/</span> (<span style=color:#ae81ff>1.</span> <span style=color:#f92672>-</span> alphas_cumprod)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>@torch</span><span style=color:#f92672>.</span>no_grad()
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>p_sample</span>(model, x, t, t_index):
+</span></span><span style=display:flex><span>    betas_t <span style=color:#f92672>=</span> extract(betas, t, x<span style=color:#f92672>.</span>shape)
+</span></span><span style=display:flex><span>    sqrt_one_minus_alphas_cumprod_t <span style=color:#f92672>=</span> extract(
+</span></span><span style=display:flex><span>        sqrt_one_minus_alphas_cumprod, t, x<span style=color:#f92672>.</span>shape
+</span></span><span style=display:flex><span>    )
+</span></span><span style=display:flex><span>    sqrt_recip_alphas_t <span style=color:#f92672>=</span> extract(sqrt_recip_alphas, t, x<span style=color:#f92672>.</span>shape)
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e># Equation 11 in the paper</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e># Use our model (noise predictor) to predict the mean</span>
+</span></span><span style=display:flex><span>    model_mean <span style=color:#f92672>=</span> sqrt_recip_alphas_t <span style=color:#f92672>*</span> (
+</span></span><span style=display:flex><span>        x <span style=color:#f92672>-</span> betas_t <span style=color:#f92672>*</span> model(x, t) <span style=color:#f92672>/</span> sqrt_one_minus_alphas_cumprod_t
+</span></span><span style=display:flex><span>    )
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> t_index <span style=color:#f92672>==</span> <span style=color:#ae81ff>0</span>:
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> model_mean
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>else</span>:
+</span></span><span style=display:flex><span>        posterior_variance_t <span style=color:#f92672>=</span> extract(posterior_variance, t, x<span style=color:#f92672>.</span>shape)
+</span></span><span style=display:flex><span>        noise <span style=color:#f92672>=</span> torch<span style=color:#f92672>.</span>randn_like(x)
+</span></span><span style=display:flex><span>        <span style=color:#75715e># Algorithm 2 line 4:</span>
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> model_mean <span style=color:#f92672>+</span> torch<span style=color:#f92672>.</span>sqrt(posterior_variance_t) <span style=color:#f92672>*</span> noise 
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#75715e># Algorithm 2 but save all images:</span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>@torch</span><span style=color:#f92672>.</span>no_grad()
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>p_sample_loop</span>(model, shape):
+</span></span><span style=display:flex><span>    device <span style=color:#f92672>=</span> next(model<span style=color:#f92672>.</span>parameters())<span style=color:#f92672>.</span>device
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    b <span style=color:#f92672>=</span> shape[<span style=color:#ae81ff>0</span>]
+</span></span><span style=display:flex><span>    <span style=color:#75715e># start from pure noise (for each example in the batch)</span>
+</span></span><span style=display:flex><span>    img <span style=color:#f92672>=</span> torch<span style=color:#f92672>.</span>randn(shape, device<span style=color:#f92672>=</span>device)
+</span></span><span style=display:flex><span>    imgs <span style=color:#f92672>=</span> []
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> i <span style=color:#f92672>in</span> tqdm(reversed(range(<span style=color:#ae81ff>0</span>, timesteps)), desc<span style=color:#f92672>=</span><span style=color:#e6db74>&#39;sampling loop time step&#39;</span>, total<span style=color:#f92672>=</span>timesteps):
+</span></span><span style=display:flex><span>        img <span style=color:#f92672>=</span> p_sample(model, img, torch<span style=color:#f92672>.</span>full((b,), i, device<span style=color:#f92672>=</span>device, dtype<span style=color:#f92672>=</span>torch<span style=color:#f92672>.</span>long), i)
+</span></span><span style=display:flex><span>        imgs<span style=color:#f92672>.</span>append(img<span style=color:#f92672>.</span>cpu()<span style=color:#f92672>.</span>numpy())
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> imgs
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#a6e22e>@torch</span><span style=color:#f92672>.</span>no_grad()
+</span></span><span style=display:flex><span><span style=color:#66d9ef>def</span> <span style=color:#a6e22e>sample</span>(model, image_size, batch_size<span style=color:#f92672>=</span><span style=color:#ae81ff>16</span>, channels<span style=color:#f92672>=</span><span style=color:#ae81ff>3</span>):
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> p_sample_loop(model, shape<span style=color:#f92672>=</span>(batch_size, channels, image_size, image_size))
+</span></span></code></pre></div><p>まず<code>p_sample</code>関数が$\bold{x}<em>t$から$\bold{x}</em>{t-1}$を求める関数になっている。</p><ul><li><p>$p_{\theta}(\bold{x}<em>{t-1} \mid \bold{x}<em>t) = \mathcal{N}\left(\bold{x}</em>{t-1}; \mu</em>{\theta}(\bold{x}<em>t, t), \bold{\Sigma}</em>{\theta}(\bold{x}_t, t)\right)$</p></li><li><p><code>model_mean</code>はこの数式に対応している。$\mu_\theta(\bold{x}_t, t) = \frac{1}{\sqrt{\alpha}_t}\left(\bold{x}_t - \frac{\beta_t}{\sqrt{\bar{\beta}<em>t}}\epsilon</em>{\theta}(\bold{x}_t , t)\right)$</p><ul><li>この部分の導出は今後モデルパートの拡充の際に記載する。</li></ul></li><li><p>最後のifブロックはサンプリングのときに説明した変数変換するノイズ部分に対応する。</p><ul><li>$ \mu_{\theta}(\bold{x}_t, t) + \sigma_t \bold{z}_t$, $ \bold{z}_t=\mathcal{N}\left(\bold{0}, \bold{I}\right)$</li></ul></li></ul><p>なお
+<code>p_sample_loop</code>はreverse processをすべての時刻で実施するための関数で、
+<code>sample</code>関数は単純なラッパー関数である。</p><h2 id=6-参考文献>6. 参考文献</h2><ul><li><a href=https://arxiv.org/abs/2006.11239>Denoising Diffusion Probabilistic Models</a><ul><li>Diffusion Modelが流行るきっかけとなった論文</li><li>いきなりこれを読むとちょっとつらい</li></ul></li><li><a href=https://arxiv.org/abs/2208.11970>Understanding Diffusion Models: A Unified Perspective</a><ul><li>Diffusion Modelに関するサーベイ論文。</li><li>VAEから統一的にDiffusion Modelに至るまでの一連の研究進展が理解出来る上に、数学的なサポートも手厚い。おすすめ。</li></ul></li><li><a href=https://www.iwanami.co.jp/book/b619864.html>拡散モデル データ生成技術の数理</a><ul><li>おそらく日本語で唯一の解説書。PFNの岡野原さんの本はWhyが抑えられていて非常によい。</li></ul></li><li><a href=https://huggingface.co/blog/annotated-diffusion>The Annotated Diffusion Model</a><ul><li>huggingfaceが提供しているdiffusion modelのpytorch実装。</li><li>今回はこれを真似している。</li></ul></li></ul></div><div class=post-footer><div class=info><span class=separator><a class=tag href=/tags/tips/>tips</a><a class=tag href=/tags/diffusion/>diffusion</a></span></div></div></div></div></div></main></div><footer class="footer footer--base"><div class=by_farbox><ul class=footer__list><li class=footer__item>&copy;
+2022-2023</li></ul></div></footer><script type=text/javascript src=/js/medium-zoom.min.51d7548d5d0e5d4ff7991252239ce6abf1fd527a0eabad7ce6b49aa21f6e08da.js integrity="sha256-UddUjV0OXU/3mRJSI5zmq/H9UnoOq6185rSaoh9uCNo=" crossorigin=anonymous></script><script defer type=text/javascript src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML" integrity=sha384-e/4/LvThKH1gwzXhdbY2AsjR3rm7LHWyhIG5C0jiRfn8AN2eTN5ILeztWw0H9jmN crossorigin=anonymous></script>
+<script type=text/x-mathjax-config>
+      MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']] } });
+    </script><script async src="https://www.googletagmanager.com/gtag/js?id=G-REEV38QRJL"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-REEV38QRJL")</script></body></html>
