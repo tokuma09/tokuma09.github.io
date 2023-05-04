@@ -38,7 +38,7 @@ url = "mailto:torutoru.cloud@gmail.com"
 
 [params.math]
 enable = true
-use = "mathjax"
+use = "katex"
 
 ## Menu items
 [menu]
