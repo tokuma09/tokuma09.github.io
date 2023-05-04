@@ -15,6 +15,9 @@ readMore = true
 favicon = "favicons/"
 doNotLoadAnimations = false
 gtagId = "G-REEV38QRJL"
+customCss =["css/custom-font.css"]
+
+
 
 [[params.socialIcons]]
 icon = "fab fa-github"
